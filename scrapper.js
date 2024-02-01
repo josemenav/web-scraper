@@ -57,11 +57,11 @@ class Scrapper {
 
         await this.handleCookies(page);
 
-        await page.waitForFunction(() => document.querySelector('.sc-i1odl-2'));
+        await page.waitForFunction(() => document.querySelector('.sc-i1odl-2 sc-i1odl-0'));
 
         const data = await page.evaluate(() => {
             const result = {};
-            const estate = document.querySelectorAll('.sc-i1odl-2');
+            const estate = document.querySelectorAll('.sc-i1odl-0');
             
             estate.forEach((estate, estateId) => {
                 const locationElement = estate.querySelector('[data-qa="POSTING_CARD_LOCATION"]');
@@ -99,7 +99,6 @@ class Scrapper {
 
             return result;
         });
-        console.log(data);
         return data;
     } catch (error) {
         console.error('Error during execution:', error);
