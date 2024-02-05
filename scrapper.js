@@ -5,13 +5,14 @@ import fs from 'fs';
 puppeteer.use(StealthPlugin());
 
 
+//Clase padre y tiene como atributos la url y el browser, constructor y metodo init
 class Scrapper {
   constructor(url) {
     this._url = url;
     this._browser = null;
   }
 
-
+  //Inicializamos el browsere con puppeteer y this._browser es igual a await puppeteer.launch
   async init() {
     console.log('Initializing browser');
     this._browser = await puppeteer.launch({
@@ -19,14 +20,13 @@ class Scrapper {
         protocolTimeout: 30000, 
     });
 
-    this._browser.on('targetcreated', async target => {
+    this._browser.on('targetcreated', async target => { // Targetcreated es un evento que se dispara cuando se crea una nueva pestaña o ventana
         const page = await target.page();
         if (page) {
             page.setDefaultTimeout(300000); 
         }
     });
 }
-
 
 
   get url() {
@@ -37,6 +37,7 @@ class Scrapper {
     this._url = url;
   }
 
+  //Metodo para manejar las cookies, si encuentra el boton de aceptar cookies, lo presiona
   async handleCookies(page) {
     const acceptButtonSelector = '[data-qa="cookies-policy-banner"]';
 
@@ -83,12 +84,15 @@ class Scrapper {
 
 
   async scrap() {
+    //Si no hay un browser inicializado, lo inicializa
     if(!this._browser) {
       await this.init();
     }
+    //Crea una nueva pestaña
     const page = await this._browser.newPage();
 
     try {
+      //Va a la url que se le pasa como parametro
         await page.goto(this._url, { waitUntil: 'domcontentloaded', timeout: 0 });
 
         //await this.handleCookies(page);
@@ -157,7 +161,6 @@ class Scrapper {
         console.error('Error during execution:', error);
     } finally {
         await page.close();
-        //await this._browser.close();
     }
 }
 
@@ -195,7 +198,7 @@ class SellingHousesJal extends Scrapper {
         await new Promise(resolve => setTimeout(resolve, delay));
       }
 
-      const fileName = 'data.json';
+      const fileName = 'dataHouses.json';
 
       if(fs.existsSync(fileName)){
         fs.unlinkSync(fileName);
@@ -209,7 +212,7 @@ class SellingHousesJal extends Scrapper {
 }
 
 
-class SellingDepartmentsJalisco extends Scrapper {
+class SellingDepartmentsJal extends Scrapper {
   constructor(url) {
     super(url);
     this._page = null;
@@ -240,7 +243,7 @@ class SellingDepartmentsJalisco extends Scrapper {
       await new Promise(resolve => setTimeout(resolve, delay));
     }
 
-    const fileName = 'data.json';
+    const fileName = 'dataDepartments.json';
 
     if(fs.existsSync(fileName)){
       fs.unlinkSync(fileName);
@@ -254,4 +257,4 @@ class SellingDepartmentsJalisco extends Scrapper {
 }
 
 
-export {SellingHousesJal, SellingDepartmentsJalisco}
+export {SellingHousesJal, SellingDepartmentsJal}
