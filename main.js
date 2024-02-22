@@ -1,14 +1,26 @@
-import {SellingHousesJal, SellingDepartmentsJal} from './scrapper.js';
+import { SellingPropertiesCom, SellingInmuebles24, SellingLamudi } from './scrapper.js';
 
-function sellingHousesJal() {
-    const scrapper = new SellingHousesJal('https://www.inmuebles24.com/casas-en-venta-en-jalisco.html');
-    scrapper.scrapeUrls(2,4,3000);
+function sellingInmuebles24() {
+    const scrapper = new SellingInmuebles24('https://www.inmuebles24.com/casas-en-venta-en-jalisco');
+    scrapper.scrapeUrls(1, 5, 3000);
 }
 
-function sellingDepartmentsJal() {
-    const scrapper = new SellingDepartmentsJal('https://www.inmuebles24.com/departamentos-en-venta-en-jalisco.html');
-    scrapper.scrapeUrls(2,4,3000);
+function sellingPropertiesCom() {
+    const scrapperVenta = new SellingPropertiesCom('https://propiedades.com/guadalajara');
+    scrapperVenta.scrapeUrls(1, 5, 3000, 'for-sale');
+
+    const scrapperRenta = new SellingPropertiesCom('https://propiedades.com/guadalajara');
+    scrapperRenta.scrapeUrls(1, 5, 3000, 'for-rent');
 }
 
-sellingHousesJal();
-sellingDepartmentsJal();
+function sellingLamudi() {
+    const scrapperVenta = new SellingLamudi('https://www.lamudi.com.mx/jalisco/casa');
+    scrapperVenta.scrapeUrls(1, 5, 3000, 'for-sale');
+
+    const scrapperRenta = new SellingLamudi('https://www.lamudi.com.mx/jalisco/casa');
+    scrapperRenta.scrapeUrls(1, 5, 3000, 'for-rent');
+}
+
+sellingPropertiesCom();
+sellingInmuebles24();
+sellingLamudi();
