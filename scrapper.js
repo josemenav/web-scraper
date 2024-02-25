@@ -14,13 +14,13 @@ class Scrapper {
         console.log('Inicializando el navegador');
         this._browser = await puppeteer.launch({
             headless: true,
-            protocolTimeout: 30000,
+            protocolTimeout: 300000,
         });
 
         this._browser.on('targetcreated', async target => {
             const page = await target.page();
             if (page) {
-                page.setDefaultTimeout(300000);
+                page.setDefaultTimeout(3000000);
             }
         });
     }
@@ -35,6 +35,37 @@ class Scrapper {
             console.error('Error manejando las cookies:', error);
         }
     }
+
+    async getCoordinates(url) {
+        if(!this._browser) {
+          await this.init();
+        }
+        if (!this._page) {
+          this._page = await this._browser.newPage();
+      }
+        try {
+          await this._page.goto(url, { waitUntil: 'domcontentloaded', timeout: 0 });
+          await this._page.waitForSelector('.static-map');
+          const data = await this._page.evaluate(() => {
+            const mapElement = document.querySelector('.static-map');
+            const mapUrl = mapElement.getAttribute('src');
+            const coordinates = {};
+            if (mapUrl) {
+              const coordinatesString =  mapUrl.split('center=')[1];
+              if (coordinatesString) {
+                let [latitude, longitude] = coordinatesString.split(',');
+                longitude = longitude.split('&')[0];
+                coordinates.latitude = latitude.trim();
+                coordinates.longitude = longitude.trim();
+              }
+            }
+            return coordinates;
+          });
+          return data;
+        } catch (error) {
+          console.error('Error getting coordinates:', error);
+        } 
+      }
 
     async scrapPropiedades() {
         if (!this._browser) {
@@ -236,37 +267,6 @@ class SellingPropertiesCom extends Scrapper {
     }
 }
 
-class SellingInmuebles24 extends Scrapper {
-    constructor(url) {
-        super(url);
-        this._page = null;
-    }
-
-    async scrapeUrls(startPage, endPage, delay) {
-        const allData = {};
-
-        for (let i = startPage; i <= endPage; i++) {
-            const url = `${this.url}-pagina-${i}.html`;
-            this.url = url;
-
-            const data = await this.scrapInmuebles24();
-            allData[url] = data;
-
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-
-        const fileName = 'dataInmuebles24.json';
-
-        if (fs.existsSync(fileName)) {
-            fs.unlinkSync(fileName);
-        }
-
-        fs.writeFile(fileName, JSON.stringify(allData), (err) => {
-            if (err) throw err;
-            console.log('Datos escritos en el archivo');
-        });
-    }
-}
 
 class SellingLamudi extends Scrapper {
     constructor(url) {
@@ -300,4 +300,95 @@ class SellingLamudi extends Scrapper {
     }
 }
 
-export { SellingPropertiesCom, SellingInmuebles24, SellingLamudi };
+
+class SellingHousesJal24 extends Scrapper {
+    constructor(url) {
+        super(url);
+        this._page = null;
+    }
+
+    async scrapeUrls(startPage, endPage, delay) {
+      const allData = {};
+      const firstPage = await this.scrapInmuebles24(); 
+      for (const [key, property] of Object.entries(firstPage)) {
+        if (property.url) {
+          const coordinates = await this.getCoordinates(property.url);
+          property.coordinates = coordinates;
+        }
+      }
+      allData[this.url] = firstPage;
+      for (let i = startPage; i <= endPage; i++) {
+        const url = `https://www.inmuebles24.com/casas-en-venta-en-jalisco-pagina-${i}.html`;
+        this.url = url; 
+  
+        const data = await this.scrapInmuebles24(); 
+        for (const [key, property] of Object.entries(data)) {
+          if (property.url) {
+            const coordinates = await this.getCoordinates(property.url);
+            property.coordinates = coordinates;
+          }
+        }
+        allData[url] = data;
+  
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+
+      const fileName = 'dataHouses24.json';
+
+      if(fs.existsSync(fileName)){
+        fs.unlinkSync(fileName);
+      }
+  
+      fs.writeFile('dataHouses24.json', JSON.stringify(allData), (err) => {
+        if (err) throw err;
+        console.log('Data written to file');
+    });
+  }
+}
+
+
+class SellingDepartmentsJal24 extends Scrapper {
+  constructor(url) {
+    super(url);
+    this._page = null;
+  }
+  async scrapeUrls(startPage, endPage, delay) {
+    const allData = {};
+    const firstPage = await this.scrapInmuebles24(); 
+    for (const [key, property] of Object.entries(firstPage)) {
+      if (property.url) {
+        const coordinates = await this.getCoordinates(property.url);
+        property.coordinates = coordinates;
+      }
+    }
+    allData[this.url] = firstPage;
+    for (let i = startPage; i <= endPage; i++) {
+      const url = `https://www.inmuebles24.com/departamentos-en-venta-en-jalisco-pagina-${i}.html`;
+      this.url = url; 
+
+      const data = await this.scrapInmuebles24(); 
+      for (const [key, property] of Object.entries(data)) {
+        if (property.url) {
+          const coordinates = await this.getCoordinates(property.url);
+          property.coordinates = coordinates;
+        }
+      }
+      allData[url] = data;
+
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    const fileName = 'dataDepartments24.json';
+
+    if(fs.existsSync(fileName)){
+      fs.unlinkSync(fileName);
+    }
+
+    fs.writeFile('dataDepartments24.json', JSON.stringify(allData), (err) => {
+      if (err) throw err;
+      console.log('Data written to file');
+    });
+  }
+}
+
+export { SellingPropertiesCom, SellingLamudi, SellingHousesJal24, SellingDepartmentsJal24 };
